@@ -1,0 +1,54 @@
+cards:
+  - entities:
+      - entity: sensor.pressure_158d0003f0fd21
+      - entity: sensor.temperature_158d0003f0fd21
+      - entity: sensor.mh_z19_co2_value
+      - entity: sensor.humidity_158d0003f0fd21
+    show_name: false
+    type: glance
+  - cards:
+      - entity: light.room_lights
+        type: light
+      - entity: weather.home_assistant
+        name: Weather
+        type: weather-forecast
+    type: horizontal-stack
+  - cards:
+      - entities:
+          - entity: sensor.mh_z19_co2_value
+            hours_to_show: 24
+            name: CO2
+            refresh_interval: 0
+        type: history-graph
+      - entities:
+          - entity: sensor.temperature_158d0003f0fd21
+            hours_to_show: 24
+            name: Temperature
+            refresh_interval: 0
+        type: history-graph
+      - entities:
+          - entity: sensor.humidity_158d0003f0fd21
+            hours_to_show: 24
+            name: Humidity
+            refresh_interval: 0
+        type: history-graph
+      - entities:
+          - entity: sensor.pressure_158d0003f0fd21
+            hours_to_show: 24
+            name: Pressure
+            refresh_interval: 0
+        type: history-graph
+      - entities:
+          - entity: sensor.illumination_34ce008143e0
+            hours_to_show: 24
+            name: Illumination
+            refresh_interval: 0
+        type: history-graph
+    type: horizontal-stack
+  - cards:
+      - entities:
+          - entity: switch.xiaomi_miio_switch
+          - entity: climate.heat_thermostat
+        type: entities
+    type: vertical-stack
+type: vertical-stack
