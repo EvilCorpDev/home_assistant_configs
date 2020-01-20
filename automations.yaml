@@ -1,0 +1,113 @@
+- id: '1574205418437'
+  alias: '[Bedroom] Click light button'
+  description: ''
+  trigger:
+    - event_data:
+        click_type: single
+        entity_id: binary_sensor.switch_158d0001b12812
+      event_type: xiaomi_aqara.click
+      platform: event
+  condition: []
+  action:
+    - data:
+        brightness: 255
+        color_temp: 200
+        entity_id: light.room_lights
+      service: light.toggle
+- id: '1574518385458'
+  alias: '[Hallway] Click light button'
+  description: ''
+  trigger:
+    - event_data:
+        click_type: single
+        entity_id: binary_sensor.switch_158d00013ecb5d
+      event_type: xiaomi_aqara.click
+      platform: event
+  condition: []
+  action:
+    - data:
+        brightness: 255
+        color_temp: 200
+        entity_id: light.room_lights
+      service: light.toggle
+- id: '1574518465458'
+  alias: '[Bedroom] Change input source to CD mode on amplifier'
+  description: ''
+  trigger:
+    - event_data:
+        domain: media_player
+        service: select_source
+        service_data:
+          source: CD mode
+          entity_id: media_player.amplifier
+      event_type: call_service
+      platform: event
+  condition: []
+  action:
+    - data:
+        host: 192.168.1.50
+        packet: JgAYAB4cOzo7OjodHjodHR4cHh0dHR0dHgANBQ==
+      service: broadlink.send
+- id: '1574512463458'
+  alias: '[Bedroom] Change input source to Optical mode on amplifier'
+  description: ''
+  trigger:
+    - event_data:
+        domain: media_player
+        service: select_source
+        service_data:
+          source: Optical mode
+          entity_id: media_player.amplifier
+      event_type: call_service
+      platform: event
+  condition: []
+  action:
+    - data:
+        host: 192.168.1.50
+        packet: JgAiAB4cOzo7HR0dHR0ekR0dHhweHB4dHToeHDs6Ox0dHR4ADQUAAAAAAAA=
+      service: broadlink.send
+- id: '1574206393455'
+  alias: '[Bedroom] Hold light button'
+  description: ''
+  trigger:
+    - event_data:
+        click_type: long_click_press
+        entity_id: binary_sensor.switch_158d0001b12812
+      event_type: xiaomi_aqara.click
+      platform: event
+  condition: []
+  action:
+    - data:
+        hs_color:
+          - 16.235
+          - 100
+        brightness: 75
+        entity_id: light.gateway Light_34ce008143e0
+      service: light.toggle
+- id: '1574206563896'
+  alias: '[Bedroom] CO2 too high'
+  description: ''
+  trigger:
+    platform: time_pattern
+    minutes: "/10"
+  condition:
+    condition: numeric_state
+    entity_id: sensor.mh_z19_co2_value
+    above: 1500
+  action:
+    service: notify.telegram_co2
+    data:
+      title: '*CO2 warning*'
+      message: "CO2 concentration in a room is too high: {{ states.sensor.mh_z19_co2_value.state }}. Please open the window."
+- id: '1574206578963'
+  alias: 'Telegram get co2 value'
+  hide_entity: true
+  trigger:
+    platform: event
+    event_type: telegram_command
+    event_data:
+      command: '/ppm'
+  action:
+  - service: notify.telegram_co2
+    data:
+      message: '{{ states.sensor.mh_z19_co2_value.state }}'

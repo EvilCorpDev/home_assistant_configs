@@ -1,0 +1,131 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+discovery:
+  ignore:
+    - igd
+# Text to speech
+homeassistant:
+  name: Smart Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: !secret latitude
+  longitude: !secret longitude
+  time_zone: Europe/Kiev
+  elevation: 152
+# Configure http to connect to google home
+http:
+  base_url: !secret ha_base_url
+  ssl_certificate: /config/fullchain.pem
+  ssl_key: /config/secured_privkey.pem
+# Google home integration
+google_assistant:
+  project_id: smarthomehasssio
+  api_key: !secret google_api_key
+  expose_by_default: false
+  entity_config:
+    light.room_lights:
+      expose: true
+      room: bedroom
+    light.yurii_room_lights:
+      expose: false
+      room: yurii bedroom
+    climate.heat_thermostat:
+      expose: true
+      room: bedroom
+
+xiaomi_aqara:
+  discovery_retry: 5
+  gateways:
+    - key: !secret aqara_key
+light:
+  - platform: group
+    name: Room lights
+    entities:
+      - light.yeelight_color1_286c07b1c412
+      - light.yeelight_color1_286c07b1c6ef
+      - light.yeelight_color1_34ce008230a3
+  - platform: group
+    name: Yurii room lights
+    entities:
+        light.yeelight_ceiling3_7c49ebae06cf
+climate:
+  - platform: generic_thermostat
+    name: Heat thermostat
+    heater: switch.xiaomi_miio_switch
+    target_sensor: sensor.temperature_158d0003f0fd21
+    target_temp: 21
+tts:
+  - platform: google_translate
+switch:
+  - platform: xiaomi_miio
+    host: 192.168.1.178
+    token: !secret miio_token
+  - platform: broadlink
+    host: 192.168.1.50
+    mac: !secret broadlink_mac
+    type: 'rm_mini'
+input_select:
+  input_mode:
+    name: Input mode
+    options:
+      - CD mode
+      - Optical mode
+    initial: Optical mode
+media_player:
+  platform: universal
+  name: Amplifier
+  state_template: >
+    on
+  commands:
+    volume_up:
+      service: broadlink.send
+      data:
+        host: 192.168.1.50
+        packet: JgAaAB0dHR0eHDsdHhweHB4dHTo7HR0dHhweAA0FAAAAAAAAAAAAAAAAAAA=
+    volume_down:
+      service: broadlink.send
+      data:
+        host: 192.168.1.50
+        packet: JgAaAB0dHR0dHTsdHR0dHR4dHTo6Hh0dHToeAA0FAAAAAAAAAAAAAAAAAAA=
+    volume_mute:
+      service: broadlink.send
+      data:
+        host: 192.168.1.50
+        packet: JgAYAB0dOjo7HR0dHhweHB4dHToeHDs6HgANBQ==
+    select_source:
+        service: input_select.select_option
+        data_template:
+          entity_id: input_select.input_mode
+          option: '{{ source }}'
+  attributes:
+    is_volume_muted: false
+    source: input_select.input_mode
+    source_list: input_select.input_mode|options
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_bot_key
+    allowed_chat_ids:
+      - !secret chat_ids
+notify:
+  - name: telegram_co2
+    platform: telegram
+    chat_id: !secret chat_ids
+recorder:
+  purge_keep_days: 3
+  db_url: "sqlite://"
+  exclude:
+    domains:
+      - updater
+      - sun
+      - persistent_notification
+      - weather
+      - binary_sensor
+      - light
+      - group
+      - switch
+      - automation
+      - person
+      - media_player
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
