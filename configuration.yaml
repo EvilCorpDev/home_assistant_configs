@@ -3,6 +3,7 @@ default_config:
 discovery:
   ignore:
     - igd
+    - google_cast
 # Text to speech
 homeassistant:
   name: Smart Home
@@ -25,6 +26,9 @@ google_assistant:
     light.room_lights:
       expose: true
       room: bedroom
+    light.entrance_light:
+      expose: true
+      room: entrance
     light.yurii_room_lights:
       expose: false
       room: yurii bedroom
@@ -47,6 +51,10 @@ light:
     name: Yurii room lights
     entities:
         light.yeelight_ceiling3_7c49ebae06cf
+  - platform: group
+    name: Entrance light
+    entities:
+        light.yeelight_ceiling1_44237c883db8
 climate:
   - platform: generic_thermostat
     name: Heat thermostat
@@ -80,7 +88,8 @@ media_player:
       service: broadlink.send
       data:
         host: 192.168.1.50
-        packet: JgAaAB0dHR0eHDsdHhweHB4dHTo7HR0dHhweAA0FAAAAAAAAAAAAAAAAAAA=
+        packet: JgAYAB0dOzo6HR4dHR0eHB46Oh0eHB4dHQANBQ==
+                
     volume_down:
       service: broadlink.send
       data:
