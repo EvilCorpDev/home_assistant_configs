@@ -14,6 +14,8 @@ wifi:
 
 captive_portal:
 
+esp32_ble_tracker:
+
 logger:
 
 ota:
@@ -31,6 +33,13 @@ sensor:
       name: "CO2"
     update_interval: 20s
     automatic_baseline_calibration: false
+  - platform: xiaomi_lywsd02
+    id: xiaomi_climate_sensor
+    mac_address: E7:2E:00:33:70:D7
+    temperature:
+      name: "Temperature"
+    humidity:
+      name: "Humidity"
 
 light:
   - platform: rgb
