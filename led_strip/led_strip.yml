@@ -1,0 +1,41 @@
+esphome:
+  name: led_strip
+  platform: ESP32
+  board: esp32doit-devkit-v1
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pass
+  ap:
+    ssid: "Led strip"
+    password: !secret wifi_ap_pass
+    ap_timeout: 30s
+  reboot_timeout: 0s
+
+captive_portal:
+
+ota:
+  password: !secret ota_pass
+
+logger:
+
+api:
+  password: !secret_api_password
+
+output:
+  - platform: ledc
+    pin: 25
+    id: red_pin
+  - platform: ledc
+    pin: 26
+    id: green_pin
+  - platform: ledc
+    pin: 27
+    id: blue_pin
+
+light:
+  - platform: rgb
+    name: "Led strip"
+    red: red_pin
+    green: green_pin
+    blue: blue_pin
