@@ -1,0 +1,200 @@
+esphome:
+  name: smart_curtains
+  platform: ESP32
+  board: esp32doit-devkit-v1
+  on_boot:
+    priority: 300
+    then:
+      - if:
+          condition:
+            sensor.in_range:
+              id: stepper_speed
+              above: 0
+          then:
+            - lambda: |-
+                id(stepper_speed).publish_state(id(stepper_speed).state);
+          else:
+            - sensor.template.publish:
+                id: stepper_speed
+                state: 600
+      - if:
+          condition:
+            not:
+              sensor.in_range:
+                id: first_target_to_open
+                above: 0
+          then:
+            - sensor.template.publish:
+                id: first_target_to_open
+                state: 100
+      - if:
+          condition:
+            not:
+              sensor.in_range:
+                id: second_target_to_open
+                above: 0
+          then:
+            - sensor.template.publish:
+                id: second_target_to_open
+                state: 100
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: !secret ap_ssid
+    password: !secret ap_password
+    ap_timeout: 30s
+  reboot_timeout: 0s
+
+captive_portal:
+
+ota:
+  password: !secret ota_password
+
+logger:
+
+sensor:
+  - platform: template
+    id: stepper_speed
+    name: "[Stepper] Speed"
+    on_value:
+      then:
+        - stepper.set_speed:
+            id: first_stepper
+            speed: !lambda 'return id(stepper_speed).state;'
+        - stepper.set_speed:
+            id: second_stepper
+            speed: !lambda 'return id(stepper_speed).state;'
+  - platform: template
+    id: first_target_to_open
+    name: "[Stepper] First target to open"
+  - platform: template
+    id: second_target_to_open
+    name: "[Stepper] Second target to open"
+  - platform: template
+    id: first_stepper_target
+    name: "[Stepper] First position"
+    update_interval: 5s
+    lambda: |-
+      if(id(first_stepper).current_position == id(first_stepper).target_position && id(first_enable).state) {
+        id(first_enable).turn_off();
+      }
+      return id(first_stepper).current_position;
+  - platform: template
+    id: second_stepper_target
+    name: "[Stepper] Second position"
+    update_interval: 5s
+    lambda: |-
+      if(id(second_stepper).current_position == id(second_stepper).target_position && id(second_enable).state) {
+        id(second_enable).turn_off();
+      }
+      return id(second_stepper).current_position;
+
+stepper:
+  - platform: a4988
+    id: first_stepper
+    step_pin: 26
+    dir_pin: 27
+    max_speed: 600 steps/s
+    acceleration: inf
+    deceleration: inf
+  - platform: a4988
+    id: second_stepper
+    step_pin: 17
+    dir_pin: 18
+    max_speed: 600 steps/s
+    acceleration: inf
+    deceleration: inf
+
+switch:
+  - platform: gpio
+    pin: 25
+    id: first_enable
+    name: "[Stepper] First enable"
+    restore_mode: ALWAYS_OFF
+    inverted: True
+  - platform: gpio
+    pin: 16
+    id: second_enable
+    name: "[Stepper] Second enable"
+    restore_mode: ALWAYS_OFF
+    inverted: True
+
+cover:
+  - platform: template
+    name: "[Stepper] Cover"
+    lambda: |-
+      if (id(first_stepper).current_position != 0 && id(second_stepper).current_position != 0) {
+        return COVER_OPEN;
+      } else {
+        return COVER_CLOSED;
+      }
+    open_action:
+      - switch.turn_on: first_enable
+      - switch.turn_on: second_enable
+      - stepper.set_target:
+          id: first_stepper
+          target: !lambda 'return id(first_target_to_open).state;'
+      - stepper.set_target:
+          id: second_stepper
+          target: !lambda 'return id(second_target_to_open).state;'
+    close_action:
+      - switch.turn_on: first_enable
+      - switch.turn_on: second_enable
+      - stepper.set_target:
+          id: first_stepper
+          target: 0
+      - stepper.set_target:
+          id: second_stepper
+          target: 0
+    stop_action:
+      - stepper.set_target:
+          id: first_stepper
+          target: !lambda return id(first_stepper).current_position;
+      - stepper.set_target:
+          id: second_stepper
+          target: !lambda return id(second_stepper).current_position;
+    optimistic: true
+
+api:
+  password: !secret api_password
+  services:
+    - service: set_stepper_speed
+      variables:
+        step_per_second: int
+      then:
+        - sensor.template.publish:
+            id: stepper_speed
+            state: !lambda 'return step_per_second;'
+    - service: set_first_target_to_open
+      variables:
+        target: int
+      then:
+        - sensor.template.publish:
+            id: first_target_to_open
+            state: !lambda 'return target;'
+    - service: set_second_target_to_open
+      variables:
+        target: int
+      then:
+        - sensor.template.publish:
+            id: second_target_to_open
+            state: !lambda 'return target;'
+    - service: control_first_stepper
+      variables:
+        target: int
+      then:
+        - switch.turn_on: first_enable
+        - stepper.set_target:
+            id: first_stepper
+            target: !lambda 'return target;'
+    - service: control_second_stepper
+      variables:
+        target: int
+      then:
+        - switch.turn_on: second_enable
+        - stepper.set_target:
+            id: second_stepper
+            target: !lambda 'return target;'
+
