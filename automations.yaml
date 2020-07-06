@@ -2,11 +2,9 @@
   alias: '[Bedroom] Click light button'
   description: ''
   trigger:
-  - event_data:
-      click_type: single
-      entity_id: binary_sensor.switch_158d0001b12812
-    event_type: xiaomi_aqara.click
-    platform: event
+  - entity_id: sensor.bedroom_switch_click
+    platform: state
+    to: single
   condition: []
   action:
   - data:
@@ -15,20 +13,30 @@
       entity_id: light.room_lights
     service: light.toggle
 - id: '1574518385458'
-  alias: '[Hallway] Click light button'
+  alias: '[Hallway] Click bedroom light button'
   description: ''
   trigger:
-  - event_data:
-      click_type: single
-      entity_id: binary_sensor.switch_158d00013ecb5d
-    event_type: xiaomi_aqara.click
-    platform: event
+  - entity_id: sensor.hallway_right_button
+    platform: state
+    to: single
   condition: []
   action:
   - data:
       brightness: 255
       color_temp: 200
       entity_id: light.room_lights
+    service: light.toggle
+- id: '1577894568589'
+  alias: '[Hall] Click light button'
+  description: ''
+  trigger:
+  - entity_id: sensor.hallway_left_button
+    platform: state
+    to: single
+  condition: []
+  action:
+  - data:
+      entity_id: light.entrance_light
     service: light.toggle
 - id: '1574518465458'
   alias: '[Bedroom] Change input source to CD mode on amplifier'
@@ -92,17 +100,16 @@
     minutes: /10
   condition:
     condition: numeric_state
-    entity_id: sensor.mh_z19_co2_value
+    entity_id: sensor.co2
     above: 1500
   action:
     service: notify.telegram_co2
     data:
       title: '*CO2 warning*'
-      message: 'CO2 concentration in a room is too high: {{ states.sensor.mh_z19_co2_value.state
-        }}. Please open the window.'
+      message: 'CO2 concentration in a room is too high: {{ states.sensor.co2.state}}.
+        Please open the window.'
 - id: '1574206578963'
   alias: Telegram get co2 value
-  hide_entity: true
   trigger:
     platform: event
     event_type: telegram_command
@@ -111,25 +118,30 @@
   action:
   - service: notify.telegram_co2
     data:
-      message: '{{ states.sensor.mh_z19_co2_value.state }}'
+      message: '{{ states.sensor.co2.state }}'
 - id: '1582130607746'
-  alias: Hallway motion on
+  alias: Hallway motion on daylight
   description: Light switch on
   trigger:
-  - entity_id: binary_sensor.motion_sensor_158d0004120b5e
+  - entity_id: binary_sensor.hallway_motion
     from: 'off'
     platform: state
     to: 'on'
-  condition: []
+  condition:
+  - after: '4:59:59'
+    before: '1:00'
+    condition: time
   action:
   - data:
+      brightness: 255
+      color_temp: 250
       entity_id: light.yeelight_ceiling1_44237c883db8
     service: light.turn_on
 - id: '1582130663825'
   alias: Hallway motion off
   description: Light switch  off
   trigger:
-  - entity_id: binary_sensor.motion_sensor_158d0004120b5e
+  - entity_id: binary_sensor.hallway_motion
     from: 'on'
     platform: state
     to: 'off'
@@ -138,3 +150,338 @@
   - data:
       entity_id: light.yeelight_ceiling1_44237c883db8
     service: light.turn_off
+- id: '1582574401627'
+  alias: Volume_Up
+  description: amplifier volume up
+  trigger:
+  - payload: VOLUME_UP
+    platform: mqtt
+    topic: /amplifier/command
+  condition: []
+  action:
+  - data:
+      entity_id: media_player.amplifier
+    service: media_player.volume_up
+- id: '1582574562872'
+  alias: Volume_Down
+  description: amplifier volume down
+  trigger:
+  - payload: VOLUME_DOWN
+    platform: mqtt
+    topic: /amplifier/command
+  condition: []
+  action:
+  - data:
+      entity_id: media_player.amplifier
+    service: media_player.volume_down
+- id: '1582575259795'
+  alias: Volume_mute
+  description: amplifier volume mute
+  trigger:
+  - payload: MUTE
+    platform: mqtt
+    topic: /amplifier/command
+  condition: []
+  action:
+  - data:
+      entity_id: media_player.amplifier
+      is_volume_muted: false
+    service: media_player.volume_mute
+- id: '1582575393955'
+  alias: Amplifier source CD
+  description: ''
+  trigger:
+  - payload: SOURCE_CD
+    platform: mqtt
+    topic: /amplifier/command
+  condition: []
+  action:
+  - data:
+      entity_id: media_player.amplifier
+      source: CD mode
+    service: media_player.select_source
+- id: '1582575439861'
+  alias: Amplifier source Optical
+  description: ''
+  trigger:
+  - payload: SOURCE_OPTICAL
+    platform: mqtt
+    topic: /amplifier/command
+  condition: []
+  action:
+  - data:
+      entity_id: media_player.amplifier
+      source: Optical mode
+    service: media_player.select_source
+- id: '1584196840387'
+  alias: Hallway motion on nightlight
+  description: night light hall
+  trigger:
+  - entity_id: binary_sensor.hallway_motion
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - after: 00:59:59
+    before: '5:00'
+    condition: time
+  action:
+  - data:
+      brightness: 3
+      color_temp: 192
+      entity_id: light.yeelight_ceiling1_44237c883db8
+    service: light.turn_on
+- id: '1593642710977'
+  alias: Turn off ac
+  description: Turn off ac when window is open
+  trigger:
+  - entity_id: binary_sensor.bedroom_window_sensor_contact
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition: []
+  action:
+  - data: {}
+    entity_id: climate.air_conditioner
+    service: climate.turn_off
+- id: '1593642762410'
+  alias: Turn on ac
+  description: Turn ac when window closed
+  trigger:
+  - entity_id: binary_sensor.bedroom_window_sensor_contact
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - data: {}
+    entity_id: climate.air_conditioner
+    service: climate.turn_on
+- id: '1593643537010'
+  alias: AC silent mode
+  description: ''
+  trigger:
+  - entity_id: climate.air_conditioner
+    from: 'off'
+    platform: state
+    to: cool
+  condition:
+  - after: 00:00:00
+    before: 09:00:00
+    condition: time
+  action:
+  - data:
+      host: 192.168.1.50
+      packet: JgDKAI+MFTEVDhUxFTIVDhUxFQ4VMRUPFTEVDhUOFTEVDxQyFQ4VMRUxFTIVMRUOFTEVDhUyFQ4VDxQPFA8UMRUPFTEVDhUxFQ4VMhUOFQ8UMRUOFTEWDhUxFQ4VMRUyFQ4VMRUOFaeTjBUxFQ4VMRUyFQ8UMRUOFTEWDxQxFQ4VDxQxFQ8VMRUOFTEVMRUyFTEVDhUxFQ8VMRUOFQ4VDxQPFDIVDhUxFQ4VMRUPFDIVDhUOFTEVDhUyFQ4VMRUOFTEVMhUOFTEVDxQADQUAAAAAAAAAAAAAAAAAAA==
+    service: broadlink.send
+- id: '1593643628674'
+  alias: 'Night Silent mode AC '
+  description: ''
+  trigger:
+  - at: '23:59:59'
+    platform: time
+  condition: []
+  action:
+  - data:
+      host: 192.168.1.50
+      packet: JgDKAI+MFTEVDhUxFTIVDhUxFQ4VMRUPFTEVDhUOFTEVDxQyFQ4VMRUxFTIVMRUOFTEVDhUyFQ4VDxQPFA8UMRUPFTEVDhUxFQ4VMhUOFQ8UMRUOFTEWDhUxFQ4VMRUyFQ4VMRUOFaeTjBUxFQ4VMRUyFQ8UMRUOFTEWDxQxFQ4VDxQxFQ8VMRUOFTEVMRUyFTEVDhUxFQ8VMRUOFQ4VDxQPFDIVDhUxFQ4VMRUPFDIVDhUOFTEVDhUyFQ4VMRUOFTEVMhUOFTEVDxQADQUAAAAAAAAAAAAAAAAAAA==
+    service: broadlink.send
+- id: '1593883043014'
+  alias: '[Kitchen] led toogle'
+  description: ''
+  trigger:
+  - platform: mqtt
+    topic: zigbee2mqtt/0x00158d000465ac04/click
+  condition: []
+  action:
+  - data:
+      brightness: 255
+      hs_color:
+      - 35.422
+      - 32.549
+    entity_id: light.led_strip
+    service: light.toggle
+- id: '1593884236392'
+  alias: '[Bathroom] motion turn on light'
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.bath_motion_sensor
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  action:
+  - entity_id: switch.bathroom_switch
+    service: switch.turn_on
+  - data: {}
+    entity_id: timer.bathroom_light_timeout
+    service: timer.start
+- id: '1593884584740'
+  alias: '[Bathroom] timeout light turn off'
+  description: ''
+  trigger:
+  - entity_id: timer.bathroom_light_timeout
+    platform: state
+    to: idle
+  condition: []
+  action:
+  - data: {}
+    entity_id: switch.bathroom_switch
+    service: switch.turn_off
+- id: '1593885200577'
+  alias: Toggle Curtains
+  description: ''
+  trigger:
+  - entity_id: sensor.bedroom_switch_click
+    platform: state
+    to: long
+  condition: []
+  action:
+  - data: {}
+    entity_id: cover.stepper_cover
+    service: cover.toggle
+- id: '1593887261289'
+  alias: Doorbell click
+  description: ''
+  trigger:
+  - entity_id: sensor.outdoor_bell_button
+    platform: state
+    to: single
+  condition: []
+  action:
+  - data:
+      media_content_id: https://dl.dropboxusercontent.com/s/04ovxqz0jd6a6b1/Doorbell-ring-ding-dong-sound.mp3?dl=0
+      media_content_type: audio/mp3
+    entity_id: media_player.guglova_kolonka
+    service: media_player.play_media
+- id: '1593895057190'
+  alias: '[Bathroom] reset motion sensor'
+  description: ''
+  trigger:
+  - entity_id: switch.bathroom_switch
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - data:
+      payload: 'OFF'
+      topic: /sensor/motion/bathroom/state
+    service: mqtt.publish
+- id: '1593900213842'
+  alias: AC temp up
+  description: ''
+  trigger:
+  - payload: TEMP_UP
+    platform: mqtt
+    topic: /climate/command
+  condition: []
+  action:
+  - data_template:
+      temperature: '{{ state_attr(''climate.air_conditioner'', ''temperature'') +
+        1 }}'
+    entity_id: climate.air_conditioner
+    service: climate.set_temperature
+- id: '1593902251846'
+  alias: AC temp down
+  description: ''
+  trigger:
+  - payload: TEMP_DOWN
+    platform: mqtt
+    topic: /climate/command
+  condition: []
+  action:
+  - data_template:
+      temperature: '{{ state_attr(''climate.air_conditioner'', ''temperature'') -
+        1 }}'
+    entity_id: climate.air_conditioner
+    service: climate.set_temperature
+- id: '1593962601855'
+  alias: '[Kitchen] motion detected'
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.kitchen_motion_sensor
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - after: sunset
+    after_offset: -01:00:00
+    condition: sun
+  action:
+  - data:
+      brightness: 255
+    entity_id: light.led_strip
+    service: light.turn_on
+- id: '1593962728960'
+  alias: '[Kitchen] motion off'
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.kitchen_motion_sensor
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - data: {}
+    entity_id: light.led_strip
+    service: light.turn_off
+- id: '1593963297993'
+  alias: '[Kitchen] night motion detected'
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.kitchen_motion_sensor
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - after: 00:00:01
+    before: 07:00:00
+    condition: time
+  action:
+  - data:
+      brightness: 75
+    entity_id: light.led_strip
+    service: light.turn_on
+- id: '1594062207970'
+  alias: test bug
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.bathroom_sensor_occupancy
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition: []
+  action:
+  - data:
+      message: Light turned on
+      title: '*Light*'
+    service: notify.telegram_co2
+- id: '1594068224508'
+  alias: test auto
+  description: ''
+  trigger:
+  - above: '0'
+    below: '3'
+    entity_id: binary_sensor.bath_motion_sensor
+    platform: numeric_state
+    value_template: '{% if state.attributes.occupancy -%}3{%- else -%}100{%- endif
+      %}'
+  condition: []
+  action:
+  - data: {}
+    entity_id: switch.bathroom_switch
+    service: switch.turn_on
+- id: '1594068838409'
+  alias: '[Bathroom] change mqtt motion state'
+  description: ''
+  trigger:
+  - platform: mqtt
+    topic: zigbee2mqtt/0x00158d00044c624f
+  condition: []
+  action:
+  - data_template:
+      payload: '{% if (trigger.payload|from_json).occupancy -%}ON{%- else -%}OFF{%-
+        endif %}'
+      topic: /sensor/motion/bathroom/state
+    service: mqtt.publish

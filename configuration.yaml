@@ -1,10 +1,57 @@
 # Configure a default setup of Home Assistant (frontend, api, etc)
 default_config:
 discovery:
-  ignore:
-    - igd
-    - google_cast
-# Text to speech
+  enable:
+    - yeelight
+    - xiaomi_gw
+frontend:
+  themes: !include_dir_merge_named themes
+
+smartir:
+
+mqtt:
+  discovery: true
+  broker: 192.168.1.128
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  birth_message:
+    topic: 'hass/status'
+    payload: 'online'
+  will_message:
+    topic: 'hass/status'
+    payload: 'offline'
+
+timer:
+  bathroom_light_timeout:
+    duration: '00:20:00'
+
+# Climate
+binary_sensor:
+  - platform: template
+    sensors:
+      ac_power_stub:
+        friendly_name: "Air conditioner power stub"
+        device_class: power
+        value_template: "{{ On }}"
+  - platform: mqtt
+    name: 'Bath Motion sensor'
+    state_topic: '/sensor/motion/bathroom/state'
+
+climate:
+  - platform: generic_thermostat
+    name: Heat thermostat
+    heater: switch.xiaomi_miio_switch
+    target_sensor: sensor.climate_sensor_temperature
+    target_temp: 21
+  - platform: smartir
+    name: Air conditioner
+    unique_id: air_conditioner
+    device_code: 1382
+    controller_data: 192.168.1.50
+    temperature_sensor: sensor.climate_sensor_temperature
+    humidity_sensor: sensor.climate_sensor_humidity
+    power_sensor: binary_sensor.ac_power_stub
+# Home assistant
 homeassistant:
   name: Smart Home
   # Location required to calculate the time the sun rises and sets
@@ -14,15 +61,19 @@ homeassistant:
   elevation: 152
 # Configure http to connect to google home
 http:
-  base_url: !secret ha_base_url
-  ssl_certificate: /config/fullchain.pem
-  ssl_key: /config/secured_privkey.pem
+  ssl_certificate: /ssl/fullchain.pem
+  ssl_key: /ssl/privkey.pem
 # Google home integration
 google_assistant:
   project_id: smarthomehasssio
-  api_key: !secret google_api_key
   expose_by_default: false
   entity_config:
+    light.led_strip:
+      expose: true
+      room: kitchen
+    climate.air_conditioner:
+      expose: true
+      room: bedroom
     light.room_lights:
       expose: true
       room: bedroom
@@ -32,14 +83,12 @@ google_assistant:
     light.yurii_room_lights:
       expose: false
       room: yurii bedroom
-    climate.heat_thermostat:
+    cover.stepper_cover:
       expose: true
       room: bedroom
-
-xiaomi_aqara:
-  discovery_retry: 5
-  gateways:
-    - key: !secret aqara_key
+    switch.bathroom_switch:
+      expose: true
+      room: bathroom
 light:
   - platform: group
     name: Room lights
@@ -55,12 +104,7 @@ light:
     name: Entrance light
     entities:
         light.yeelight_ceiling1_44237c883db8
-climate:
-  - platform: generic_thermostat
-    name: Heat thermostat
-    heater: switch.xiaomi_miio_switch
-    target_sensor: sensor.temperature_158d0003f0fd21
-    target_temp: 21
+
 tts:
   - platform: google_translate
 switch:
@@ -88,8 +132,7 @@ media_player:
       service: broadlink.send
       data:
         host: 192.168.1.50
-        packet: JgAYAB0dOzo6HR4dHR0eHB46Oh0eHB4dHQANBQ==
-                
+        packet: JgAaAB0dHR0dHTsdHR0dHR4cHjk7HR4cHh0dAA0FAAAAAAAAAAAAAAAAAAA=
     volume_down:
       service: broadlink.send
       data:
