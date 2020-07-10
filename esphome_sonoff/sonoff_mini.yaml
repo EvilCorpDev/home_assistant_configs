@@ -1,0 +1,57 @@
+esphome:
+  name: "sonoff_mini"
+  platform: ESP8266
+  board: esp8285
+  arduino_version: 2.4.2
+
+wifi:
+  reboot_timeout: 0min
+  ssid: !secret wif_ssid
+  password: !secret wifi_pass
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Sonoff Mini Fallback Hotspot"
+    password: "l2AXMM3iBuFE"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_pass
+
+ota:
+  password: !secret ota_password
+  
+status_led:
+  pin:
+    number: GPIO13
+    inverted: True
+    
+binary_sensor:
+  - platform: gpio
+    name: "[Bedroom] Sonoff light button"
+    pin: GPIO04
+    id: bedroom_light_button
+    on_press:
+      then:
+        - switch.turn_on:
+            id: bedroom_light_relay
+    on_release:
+      then:
+        - switch.turn_off:
+            id: bedroom_light_relay
+
+switch:
+  - platform: gpio
+    name: "[Bedroom] Sonoff ligth relay"
+    pin: GPIO12
+    id: bedroom_light_relay
+    
+sensor:
+  - platform: wifi_signal
+    name: "[Bedroom] Sonoff light relay wifi signal"
+    update_interval: 60s
