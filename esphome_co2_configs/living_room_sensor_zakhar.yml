@@ -17,7 +17,7 @@ captive_portal:
 logger:
 
 ota:
-  password: "zpk30101994"
+  password: "password"
 
 uart:
   rx_pin: 26
